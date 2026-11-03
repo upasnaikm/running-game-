@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Pulse: 3D Endless Runner</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+</head>
+<body>
+    <div id="game-container">
+        <!-- 3D WebGL Canvas for Main Gameplay -->
+        <canvas id="canvas3d"></canvas>
+
+        <!-- Speed Vignette & Impact Effects -->
+        <div id="screen-effects"></div>
+
+        <!-- In-Game HUD -->
+        <div id="hud-overlay" style="display: none;">
+            <div class="hud-top-bar">
+                <!-- Score & High Score -->
+                <div class="hud-panel score-panel">
+                    <div class="hud-label">Score</div>
+                    <div class="hud-value" id="hud-score">0</div>
+                    <div class="high-score-small">BEST: <span id="hud-best-small">0</span></div>
+                </div>
+
+                <!-- Center Distance & Speed Stats -->
+                <div class="center-stats-panel">
+                    <div class="stat-pill">
+                        <span class="stat-icon" id="hud-world-icon">🌴</span>
+                        <span class="stat-text" id="hud-speed">15 km/h</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-icon">🚩</span>
+                        <span class="stat-text" id="hud-distance">0 m</span>
+                    </div>
+                </div>
+
+                <!-- Coins & Pause Button -->
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div class="hud-panel coins-panel">
+                        <div class="coin-icon-hud" id="hud-coin-badge">$</div>
+                        <div class="hud-value" id="hud-coins" style="color: #ffd700;">0</div>
+                    </div>
+                    <button class="hud-btn" id="btn-pause" title="Pause Game (P / Esc)">⏸</button>
+                </div>
+            </div>
+
+            <!-- Active Multiplier Badge (if 2X active) -->
+            <div id="hud-multiplier-badge" class="multiplier-badge" style="display: none;">
+                <span>🔥</span> 2X MULTIPLIER
+            </div>
+
+            <!-- Active Power-Ups Tray -->
+            <div id="powerups-tray">
+                <!-- Dynamically injected active powerup pills -->
+            </div>
+        </div>
+
+        <!-- Floating Notifications / Toasts -->
+        <div id="toast-container"></div>
+
+        <!-- Mobile Touch Controls (On-Screen Touch Buttons) -->
+        <div id="mobile-controls">
+            <div class="touch-cluster-horizontal">
+                <button class="touch-btn" id="touch-left" aria-label="Move Left">◀</button>
+                <button class="touch-btn" id="touch-right" aria-label="Move Right">▶</button>
+            </div>
+            <div class="touch-cluster-vertical">
+                <button class="touch-btn" id="touch-jump" aria-label="Jump">▲</button>
+                <button class="touch-btn" id="touch-slide" aria-label="Slide">▼</button>
+            </div>
+        </div>
+
+        <!-- ===================================================================
+             1. SPLASH SCREEN (APP OPENING EXPERIENCE)
+             =================================================================== -->
+        <div id="splash-screen" class="modal-screen">
+            <div class="splash-content">
+                <div class="splash-welcome">✨ WELCOME TO ✨</div>
+                <div>
+                    <h1 class="splash-logo-title">NEON PULSE</h1>
+                    <div class="splash-logo-subtitle">3D INFINITE ODYSSEY</div>
+                </div>
+
+                <div class="splash-loader-bar">
+                    <div class="splash-loader-fill" id="splash-loader-fill"></div>
+                </div>
+                <div class="splash-loader-text" id="splash-loader-text">INITIALIZING QUANTUM ENGINES...</div>
+
+                <div class="splash-tap-prompt" id="splash-tap-btn" style="display: none;">
+                    TAP TO ENTER THE RUNNER MATRIX ⚡
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================================================================
+             2. MAIN MENU SCREEN
+             =================================================================== -->
+        <div id="main-menu-screen" class="modal-screen hidden">
+            <div class="modal-card">
+                <div class="game-logo">
+                    <h1 style="font-size: 34px;">NEON PULSE</h1>
+                    <div class="sub-title">CHOOSE YOUR PATH</div>
+                </div>
+
+                <!-- Selections Quick Overview (Character & World) -->
+                <div class="menu-selections-bar">
+                    <div class="selection-chip" id="menu-chip-char" title="Click to Change Character">
+                        <span class="selection-chip-label">Runner</span>
+                        <div class="selection-chip-val">
+                            <span id="menu-char-icon">⚡</span>
+                            <span id="menu-char-name">Kai</span>
+                        </div>
+                    </div>
+                    <div class="selection-chip" id="menu-chip-world" title="Click to Change World">
+                        <span class="selection-chip-label">World</span>
+                        <div class="selection-chip-val">
+                            <span id="menu-world-icon">🌴</span>
+                            <span id="menu-world-name">Jungle</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-box highlight" style="margin-bottom: 14px;">
+                    <div class="stat-box-label">All-Time High Score</div>
+                    <div class="stat-box-value" id="menu-best-score" style="color: #00f3ff;">0</div>
+                </div>
+
+                <div class="menu-buttons-grid">
+                    <button class="btn-primary" id="btn-menu-play">LAUNCH ADVENTURE ⚡</button>
+                    <div class="menu-sub-row">
+                        <button class="btn-secondary" id="btn-menu-characters">
+                            <span>👤</span> CHARACTERS
+                        </button>
+                        <button class="btn-secondary" id="btn-menu-worlds">
+                            <span>🌍</span> WORLDS
+                        </button>
+                        <button class="btn-secondary" id="btn-menu-settings">
+                            <span>⚙️</span> SETTINGS
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================================================================
+             3. CHARACTER SELECTION SCREEN (WITH 3D PREVIEW)
+             =================================================================== -->
+        <div id="char-select-screen" class="modal-screen hidden">
+            <div class="modal-card">
+                <div class="game-logo" style="margin-bottom: 12px;">
+                    <h1 style="font-size: 26px;">SELECT RUNNER</h1>
+                    <div class="sub-title">CUSTOMIZE YOUR HERO</div>
+                </div>
+
+                <!-- 3D Preview Stage with Left/Right Navigation -->
+                <div class="char-stage-container">
+                    <canvas id="char-preview-canvas"></canvas>
+                    <button class="nav-arrow-btn nav-arrow-left" id="btn-char-prev" aria-label="Previous Character">◀</button>
+                    <button class="nav-arrow-btn nav-arrow-right" id="btn-char-next" aria-label="Next Character">▶</button>
+                </div>
+
+                <!-- Character Info Card -->
+                <div class="char-info-card">
+                    <div class="char-name-title-row">
+                        <div class="char-display-name" id="char-display-name">Kai - Pulse Runner</div>
+                        <div class="char-title-tag" id="char-title-tag">Cyber Kinetic</div>
+                    </div>
+                    <div class="char-desc-text" id="char-desc-text">
+                        A cybernetic speedster equipped with twin jet thrusters and responsive anti-grav sneakers.
+                    </div>
+                    <div class="char-perk-badge" id="char-perk-badge">
+                        <span>⚡</span> Specialty: Agile Lane Transition
+                    </div>
+                </div>
+
+                <div class="menu-buttons-grid">
+                    <button class="btn-primary" id="btn-char-confirm">SELECT & CONFIRM RUNNER</button>
+                    <button class="btn-secondary" id="btn-char-back">BACK TO MENU</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================================================================
+             4. FOUR WORLDS SELECTION SCREEN
+             =================================================================== -->
+        <div id="world-select-screen" class="modal-screen hidden">
+            <div class="modal-card">
+                <div class="game-logo" style="margin-bottom: 12px;">
+                    <h1 style="font-size: 26px;">SELECT GAME WORLD</h1>
+                    <div class="sub-title">CHOOSE YOUR RUNNING REALM</div>
+                </div>
+
+                <div class="worlds-grid">
+                    <!-- World 1: Realistic Bright Jungle -->
+                    <div class="world-card jungle selected" data-world="jungle">
+                        <div class="world-header-row">
+                            <span class="world-icon-badge">🌴</span>
+                            <div class="world-title">Bright Jungle</div>
+                        </div>
+                        <div class="world-tagline">
+                            Lush green trees, waterfalls, mossy ancient ruins, and sunlit river valleys.
+                        </div>
+                        <div class="world-active-indicator">✓ SELECTED REALM</div>
+                    </div>
+
+                    <!-- World 2: Realistic Ice Cream Land -->
+                    <div class="world-card candy" data-world="candy">
+                        <div class="world-header-row">
+                            <span class="world-icon-badge">🍦</span>
+                            <div class="world-title">Ice Cream Land</div>
+                        </div>
+                        <div class="world-tagline">
+                            Waffle cone peaks, swirl lollipops, pastel candy paths, and marshmallow clouds.
+                        </div>
+                        <div class="world-active-indicator">✓ SELECTED REALM</div>
+                    </div>
+
+                    <!-- World 3: Realistic Bright Road Land -->
+                    <div class="world-card road" data-world="road">
+                        <div class="world-header-row">
+                            <span class="world-icon-badge">🏙️</span>
+                            <div class="world-title">Bright Road Land</div>
+                        </div>
+                        <div class="world-tagline">
+                            Smooth sunlit highway through gleaming modern cityscapes and green pine highways.
+                        </div>
+                        <div class="world-active-indicator">✓ SELECTED REALM</div>
+                    </div>
+
+                    <!-- World 4: Horror World -->
+                    <div class="world-card horror" data-world="horror">
+                        <div class="world-header-row">
+                            <span class="world-icon-badge">🎃</span>
+                            <div class="world-title">Horror World</div>
+                        </div>
+                        <div class="world-tagline">
+                            Haunted gothic ruins, gnarled shadow trees, eerie violet mist, and spectral trains.
+                        </div>
+                        <div class="world-active-indicator">✓ SELECTED REALM</div>
+                    </div>
+                </div>
+
+                <div class="menu-buttons-grid">
+                    <button class="btn-primary" id="btn-world-confirm">CONFIRM REALM & PLAY</button>
+                    <button class="btn-secondary" id="btn-world-back">BACK TO MENU</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================================================================
+             5. INSTAGRAM CONTINUE MODAL
+             =================================================================== -->
+        <div id="instagram-continue-screen" class="modal-screen hidden">
+            <div class="modal-card instagram-card">
+                <div class="instagram-icon-badge">
+                    <svg class="instagram-svg" viewBox="0 0 24 24">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                    </svg>
+                </div>
+
+                <div class="instagram-title">DON'T LET YOUR ADVENTURE END HERE!</div>
+
+                <div class="instagram-message">
+                    Follow <span class="instagram-handle">@upasna_ikm</span> on Instagram and continue your adventure right now!
+                </div>
+
+                <div class="menu-buttons-grid">
+                    <button class="btn-instagram-ok" id="btn-insta-continue">
+                        OK — CONTINUE ADVENTURE ⚡
+                    </button>
+                    <button class="btn-secondary" id="btn-insta-cancel">
+                        CANCEL — GAME OVER
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================================================================
+             6. MYSTERY REWARD GIFT SCREEN
+             =================================================================== -->
+        <div id="mystery-gift-screen" class="modal-screen hidden">
+            <div class="modal-card">
+                <div class="game-logo" style="margin-bottom: 8px;">
+                    <h1 style="font-size: 26px;">MYSTERY GIFT BOX</h1>
+                    <div class="sub-title">TAP TO UNLOCK YOUR SURPRISE!</div>
+                </div>
+
+                <!-- Interactive Gift Box Stage -->
+                <div class="gift-box-stage">
+                    <div class="gift-box-interactive" id="gift-box-element" title="Tap to Open!">
+                        🎁
+                    </div>
+
+                    <!-- Revealed Reward Container -->
+                    <div class="reward-reveal-card" id="reward-reveal-card">
+                        <div class="reward-reveal-icon" id="reward-reveal-icon">💰</div>
+                        <div class="reward-reveal-title" id="reward-reveal-title">+250 BONUS COINS!</div>
+                        <div class="reward-reveal-desc" id="reward-reveal-desc">Added directly to your treasury!</div>
+                    </div>
+                </div>
+
+                <div class="menu-buttons-grid">
+                    <button class="btn-primary" id="btn-gift-collect" style="display: none;">
+                        CLAIM REWARD & PROCEED 🏆
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================================================================
+             7. SETTINGS MODAL
+             =================================================================== -->
+        <div id="settings-modal" class="modal-screen hidden">
+            <div class="modal-card">
+                <div class="game-logo" style="margin-bottom: 12px;">
+                    <h1 style="font-size: 26px;">GAME SETTINGS</h1>
+                    <div class="sub-title">AUDIO & PREFERENCES</div>
+                </div>
+
+                <div class="settings-rows">
+                    <div class="settings-row">
+                        <div class="settings-label">
+                            <span>🎵</span> Background Music
+                        </div>
+                        <div class="toggle-switch active" id="setting-toggle-music">
+                            <div class="toggle-knob"></div>
+                        </div>
+                    </div>
+                    <div class="settings-row">
+                        <div class="settings-label">
+                            <span>🔊</span> Sound Effects (SFX)
+                        </div>
+                        <div class="toggle-switch active" id="setting-toggle-sfx">
+                            <div class="toggle-knob"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="menu-buttons-grid">
+                    <button class="btn-primary" id="btn-settings-close">SAVE & CLOSE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================================================================
+             8. PAUSE MODAL
+             =================================================================== -->
+        <div id="pause-modal" class="modal-screen hidden">
+            <div class="modal-card">
+                <div class="game-logo">
+                    <h1 style="font-size: 26px;">SIMULATION PAUSED</h1>
+                    <div class="sub-title">SYSTEM IN SUSPENSION</div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-box-label">Current Score</div>
+                        <div class="stat-box-value" id="pause-score">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-label">Coins Collected</div>
+                        <div class="stat-box-value" id="pause-coins" style="color: #ffd700;">0</div>
+                    </div>
+                </div>
+
+                <div class="menu-actions">
+                    <button class="btn-primary" id="btn-resume">RESUME RUN (ESC)</button>
+                    <button class="btn-secondary" id="btn-pause-restart">RESTART RUN</button>
+                    <button class="btn-secondary" id="btn-pause-menu">MAIN MENU</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================================================================
+             9. GAME OVER MODAL
+             =================================================================== -->
+        <div id="gameover-modal" class="modal-screen hidden">
+            <div class="modal-card">
+                <div class="gameover-title">RUN TERMINATED</div>
+                <div id="gameover-record-badge" class="new-record-ribbon" style="display: none;">🏆 NEW PERSONAL BEST!</div>
+
+                <div class="stats-grid">
+                    <div class="stat-box highlight">
+                        <div class="stat-box-label">Final Score</div>
+                        <div class="stat-box-value" id="gameover-score">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-label">Best Record</div>
+                        <div class="stat-box-value" id="gameover-best" style="color: #ffd700;">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-label">Coins Picked</div>
+                        <div class="stat-box-value" id="gameover-coins" style="color: #ffd700;">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-label">Distance Ran</div>
+                        <div class="stat-box-value" id="gameover-distance">0 m</div>
+                    </div>
+                </div>
+
+                <div class="menu-actions">
+                    <button class="btn-primary" id="btn-restart">RUN AGAIN (SPACE)</button>
+                    <button class="btn-secondary" id="btn-menu">RETURN TO MENU</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- Game Scripts -->
+    <script src="js/audio.js"></script>
+    <script src="js/particles.js"></script>
+    <script src="js/character.js"></script>
+    <script src="js/track.js"></script>
+    <script src="js/obstacles.js"></script>
+    <script src="js/collectibles.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>

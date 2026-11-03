@@ -1,0 +1,19 @@
+{
+  "name": "neon-pulse-3d-runner",
+  "version": "1.0.0",
+  "description": "Neon Pulse: 3D Endless Runner Game built with Three.js",
+  "main": "index.html",
+  "scripts": {
+    "build": "node build.js",
+    "start": "npx serve ."
+  },
+  "keywords": [
+    "threejs",
+    "endless-runner",
+    "game",
+    "webgl",
+    "javascript"
+  ],
+  "author": "upasnaikm",
+  "license": "MIT"
+}
